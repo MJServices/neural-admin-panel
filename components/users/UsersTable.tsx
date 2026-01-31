@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getUsers, deleteUser } from '@/app/actions';
 
-const UsersTable = () => {
+import { Suspense } from 'react';
+
+const UsersTableContent = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0); // To trigger re-fetch after delete
@@ -133,6 +135,14 @@ const UsersTable = () => {
                 </tbody>
             </table>
         </div>
+    );
+};
+
+const UsersTable = () => {
+    return (
+        <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading users...</div>}>
+            <UsersTableContent />
+        </Suspense>
     );
 };
 

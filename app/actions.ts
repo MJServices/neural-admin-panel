@@ -5,6 +5,11 @@ import { createClient } from '@/lib/supabase/server';
 export async function getDashboardStats() {
     const supabase = await createClient();
 
+    // Start of the current month calculation
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
     // Parallel fetch for stats
     const [
         { count: usersCount },
@@ -14,10 +19,10 @@ export async function getDashboardStats() {
         // Approximation for active users: users with recent login or activity
         { count: activeUsersCount }
     ] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('messages').select('*', { count: 'exact', head: true }),
         supabase.from('messages').select('*', { count: 'exact', head: true }).eq('role', 'assistant'),
-        supabase.from('users').select('*', { count: 'exact', head: true }).gte('member_since', new Date(new Date().setDate(1)).toISOString()), // New this month
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('member_since', startOfMonth.toISOString()), // New this month from profiles
         supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_active_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Active in last 7 days
     ]);
 
@@ -195,6 +200,9 @@ export async function getUsers(limit = 10, offset = 0, query = '') {
         .range(offset, offset + limit - 1)
         .order('member_since', { ascending: false });
 
+    console.log(`[getUsers] Fetching users. Limit: ${limit}, Offset: ${offset}, Query: "${query}"`);
+    console.log(`[getUsers] Result: ${data?.length} rows, Total Count: ${count}`);
+
     if (error) {
         console.log('Error fetching users', error);
         return { data: [], count: 0 };
@@ -223,6 +231,10 @@ export async function getUserPageStats() {
     const supabase = await createClient() as any;
 
     // Parallel fetch for specific user stats
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
     const [
         { count: totalUsers },
         { count: activeUsers },
@@ -230,10 +242,13 @@ export async function getUserPageStats() {
         { data: satisfactionData }
     ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).not('last_active_at', 'is', null), // Active users have recent activity
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('member_since', new Date(new Date().setDate(1)).toISOString()),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).not('last_active_at', 'is', null),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('member_since', startOfMonth.toISOString()),
         supabase.from('profiles').select('bond_score')
     ]);
+
+    console.log(`[getUserPageStats] Total: ${totalUsers}, Active: ${activeUsers}, New: ${newUsers}`);
+    console.log(`[getUserPageStats] Start of Month: ${startOfMonth.toISOString()}`);
 
     // Calculate Average Satisfaction (Bond Score)
     let avgSatisfaction = 0;

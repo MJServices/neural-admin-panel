@@ -9,7 +9,9 @@ interface ConversationListProps {
     selectedId: string | null;
 }
 
-const ConversationList = ({ onSelectConversation, selectedId }: ConversationListProps) => {
+import { Suspense } from 'react';
+
+const ConversationListContent = ({ onSelectConversation, selectedId }: ConversationListProps) => {
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -134,6 +136,14 @@ const ConversationList = ({ onSelectConversation, selectedId }: ConversationList
                 )}
             </div>
         </div>
+    );
+};
+
+const ConversationList = (props: ConversationListProps) => {
+    return (
+        <Suspense fallback={<div className="bg-white p-6 rounded-xl border h-full flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>}>
+            <ConversationListContent {...props} />
+        </Suspense>
     );
 };
 
